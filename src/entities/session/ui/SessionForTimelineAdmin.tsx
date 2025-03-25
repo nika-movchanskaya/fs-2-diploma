@@ -12,8 +12,7 @@ export const SessionForTimelineAdmin = (props: {session: SessionForTimeline}) =>
     
         const filmElem = document.querySelector(`.conf-step__movie[data-id="${id}"]`) as HTMLElement;
         
-        const computedStyle = getComputedStyle(filmElem);
-        return computedStyle.backgroundColor || 'rgb(133, 255, 137)';
+        return filmElem ? getComputedStyle(filmElem).backgroundColor : 'rgb(133, 255, 137)';
     }
 
     const totalMinutes = 24 * 60;

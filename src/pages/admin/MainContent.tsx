@@ -11,6 +11,7 @@ import { FilmAdmin } from "../../entities/film/model/FilmAdmin";
 import { HallWithTimeline } from "../../entities/hall/model/HallWithTimeline";
 import { HallWithTimelineAdmin } from "../../entities/hall/ui/HallWithTimeLineAdmin";
 import dayjs from "dayjs";
+import DateSlider from "../../widgets/DateSlider";
 
 export const MainContent = (props: any) => {
     const navigate = useNavigate();
@@ -259,7 +260,7 @@ export const MainContent = (props: any) => {
         }, selectedDay)
 
         return () => {}
-    }, []);
+    }, [selectedDay]);
 
     //session creating popup
     const [isSessionOpen, setIsSessionOpen] = useState(false);
@@ -537,7 +538,7 @@ export const MainContent = (props: any) => {
                     </div>
                     
                     <div className="conf-step__seances">
-
+                        <DateSlider selectedDay={selectedDay} setSelectedDay={setSelectedDay}/>      
                         {hallsWithTimeline.map((hall: HallWithTimeline) => {
                             return (
                                 <HallWithTimelineAdmin hall={hall}/>
