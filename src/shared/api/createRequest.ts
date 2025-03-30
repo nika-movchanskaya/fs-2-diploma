@@ -3,6 +3,7 @@ export const createRequest = async(options:{
     sendMethod: string,
     id?: number,
     data?: any,
+    isFormData?: boolean,
     callback: (data: any[]) => void
 }) => {
 
@@ -27,13 +28,28 @@ export const createRequest = async(options:{
                 alert(error);
             })
     }
-    else if (options.sendMethod === 'POST' || options.sendMethod === 'PATCH') {
+    else if ((options.sendMethod === 'POST' || options.sendMethod === 'PATCH') && !options.isFormData) {
         fetch(strRequest, {
             method: options.sendMethod,
             body: JSON.stringify(options.data),
             headers: {
                 'Content-Type': 'application/json',
             }
+        })
+            .then((response) => response.json())
+            .then((data: any) => {
+                console.log(data);
+                options.callback(data);
+            })
+            .catch((error) => {
+                console.error(`Error: ${error}`);
+                alert(error);
+            })
+    }
+    else if ((options.sendMethod === 'POST') && options.isFormData) {
+        fetch(strRequest, {
+            method: options.sendMethod,
+            body: options.data,
         })
             .then((response) => response.json())
             .then((data: any) => {

@@ -12,7 +12,7 @@ export const HallWithTimelineAdmin = (props: {hall: HallWithTimeline}) => {
             <div className="conf-step__seances-timeline">
                 {hall.sessions.map((session: SessionForTimeline) => {
                     return (
-                        <SessionForTimelineAdmin session={session}/>
+                        <SessionForTimelineAdmin session={session} key={session.id}/>
                     )
                 })}            
             </div>

@@ -38,7 +38,7 @@ export const IndexContent = (props: {
             <main>
                 {films.map((item: FilmWithHallTime) => {
                     return (
-                        <FilmElem key={item.id} film={item}/>
+                        <FilmElem key={item.id} backendServer={backendServer} film={item}/>
                     )
                 })}
             </main>

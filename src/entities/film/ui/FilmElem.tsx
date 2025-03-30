@@ -1,17 +1,16 @@
 import { FilmWithHallTime } from "../model/FilmWithHallTime"
 import { HallTime } from "../../hall/model/HallTime";
-import { NavLink } from "react-router-dom";
 import { getMinutesText } from "../../../features/formats";
 import { SessionShort } from "../../session/model/SessionShort";
 
-export const FilmElem = (props: {film: FilmWithHallTime}) => {
-    const {film} = props;
+export const FilmElem = (props: {film: FilmWithHallTime, backendServer: string}) => {
+    const {film, backendServer} = props;
 
     return (
         <section className="movie">
             <div className="movie__info">      
                 <div className="movie__poster">
-                    <img src={film.image}
+                    <img src={`${backendServer}/storage/${film.image}`}
                         className="card-img-top img-fluid" alt={film.name}/>
                 </div>
                 <div className="movie__description">        

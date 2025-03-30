@@ -62,14 +62,34 @@ export const MainContent = (props: any) => {
     }
 
     //upadte hall prices
-    const [regularPrice, setRegularPrice] = useState(0);
-    const [vipPrice, setVipPrice] = useState(0);
+    const [regularPrice, setRegularPrice] = useState<number>();
+    const [vipPrice, setVipPrice] = useState<number>();
 
-    const [hallId, setHallId] = useState();
+    //update data for selected hall
+    const [currentHall, setCurrentHall] = useState<Hall>();
+    const [hallId, setHallId] = useState<number>();
+
+    useEffect(() => {
+        if (currentHall) {
+            setHallId(currentHall.id);
+            setHallX(currentHall.x);
+            setHallY(currentHall.y);
+
+            //getting hall prices and save them
+            const resp = createRequest({
+                url: backendServer + '/api/price/' + currentHall.id, 
+                sendMethod: 'GET', 
+                callback: (data: any) => {
+                    setRegularPrice(data.price.regular);
+                    setVipPrice(data.price.vip);
+                }
+            });
+        }
+    }, [currentHall]);
 
     //update prices
     const handleUpdatePrices = (regularPrice?: number, vipPrice?: number) => {
-        if (regularPrice !== undefined && regularPrice < 0 || vipPrice !== undefined && vipPrice < 0) return alert("Введите значение цены >= 0");
+        if (!regularPrice || (regularPrice && regularPrice < 0) || !vipPrice || (vipPrice && vipPrice < 0)) return alert("Введите значение цены >= 0");
 
         const resp = createRequest({
             url: backendServer + `/api/price/${hallId}`,
@@ -120,7 +140,7 @@ export const MainContent = (props: any) => {
 
     //upadte hall sizes
     const handleUpdateSchema = (x: number, y: number, seats: SeatSchema[]) => {
-        if (x < 1 || y < 1) return alert("Введите значение размеров > 0");
+        if (x < 1 || y < 1 || !x || !y) return alert("Введите значение размеров > 0");
 
         const resp = createRequest({
             url: backendServer + `/api/hall/${hallId}`,
@@ -178,6 +198,7 @@ export const MainContent = (props: any) => {
     useEffect(() => {
         const resp = getHalls((data: any) => {
             setHalls(data);
+            setCurrentHall(data[0]);
         });
 
         return () => {}
@@ -198,32 +219,47 @@ export const MainContent = (props: any) => {
     const [filmDescription, setFilmDescription] = useState("");
     const [filmOrigin, setFilmOrigin] = useState("");
     const [filmDuration, setFilmDuration] = useState(0);
-    const [filmImage, setFilmImage] = useState("");
+    const [filmImage, setFilmImage] = useState<File | null>(null);
 
     const openFilmModal = () => setIsFilmOpen(true);
     const closeFilmModal = () => setIsFilmOpen(false);
 
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setFilmImage(e.target.files[0]);
+        }
+    };
+
     //create film
-    const handleCreateFilm = (name: string, description: string, origin: string, duration: number, image: string) => {
-        if (filmName.trim() === "" || filmDescription.trim() === "" || filmOrigin.trim() === "" || filmDuration === 0) return alert("Введите название, описание, длительность, пороисхождение фильма!");
+    const handleCreateFilm = (name: string, description: string, origin: string, duration: number, image: File|null) => {
+        if (filmName.trim() === "" || filmDescription.trim() === "" || filmOrigin.trim() === "") return alert("Введите название, описание, длительность, страну фильма!");
+        else if (filmDuration <= 0) {
+            return alert("Введите корректную продолжительность фильма!");
+        }
+        else if (!filmImage) {
+            alert("Выберите изображение");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("name", name);
+        formData.append("description", description);
+        formData.append("origin", origin);
+        formData.append("duration", duration.toString());
+        formData.append("image", filmImage);
 
         const resp = createRequest({
             url: backendServer + '/api/admin/film/',
             sendMethod: 'POST', 
-            data: {
-                'name': name,
-                'description': description,
-                'origin': origin,
-                'duration': duration,
-                'image': image,
-            },
+            data: formData,
+            isFormData: true,
             callback: (data: any) => {
                 console.log("New film created:", filmName);
                 setFilmName("");
                 setFilmDescription("");
                 setFilmOrigin("");
                 setFilmDuration(0);
-                setFilmImage("");
+                setFilmImage(null);
 
                 closeFilmModal();
             }
@@ -268,6 +304,7 @@ export const MainContent = (props: any) => {
     const [hallSessionId, setHallSessionId] = useState<number|null>(null);
     const [dateSession, setDateSession] = useState("");
     const [startTimeSession, setStartTimeSession] = useState("");
+    const [availableSlots, setAvailableSlots] = useState<string[]>();
 
     const openSessionModal = () => setIsSessionOpen(true);
     const closeSessionModal = () => setIsSessionOpen(false);
@@ -296,6 +333,19 @@ export const MainContent = (props: any) => {
             }
         });
     };
+
+    useEffect(() => {
+        if (filmSessionId && hallSessionId && dateSession) {
+            const resp = createRequest({
+                url: backendServer + `/api/admin/available-start-times?film_id=${filmSessionId}&hall_id=${hallSessionId}&date=${dateSession}`,
+                sendMethod: 'GET',
+                callback: (data: any) => {
+                    console.log("New session created");
+                    setAvailableSlots(data.available_times);
+                }
+            });
+        }
+    }, [filmSessionId, hallSessionId, dateSession]);
 
     //activate/or deactivate all sessions
     const [isSessionsActive, setIsSessionsActive] = useState(false);
@@ -364,7 +414,8 @@ export const MainContent = (props: any) => {
                                     hall={hall} 
                                     key={hall.id}
                                     hallId={hallId}
-                                    setHallId={setHallId}
+                                    updateHall={(hall: Hall) => setCurrentHall(hall)}
+                                    radioName="_1"
                                 />
                             )
                         })}
@@ -374,8 +425,7 @@ export const MainContent = (props: any) => {
                     <label className="conf-step__label">Рядов, шт
                         <input type="number"
                             value={hallY}
-                            onChange={(e) => setHallY(Number(e.target.value))}
-                            placeholder="10"
+                            onChange={(e) => setHallY(e.target.value === "" ? NaN : Number(e.target.value))}
                             className="conf-step__input"
                         />
                     </label>
@@ -383,8 +433,7 @@ export const MainContent = (props: any) => {
                     <label className="conf-step__label">Мест, шт
                         <input type="number"
                             value={hallX}
-                            onChange={(e) => setHallX(Number(e.target.value))}
-                            placeholder="10"
+                            onChange={(e) => setHallX(e.target.value === "" ? NaN : Number(e.target.value))}
                             className="conf-step__input"
                         />
                     </label>
@@ -423,7 +472,8 @@ export const MainContent = (props: any) => {
                                     hall={hall} 
                                     key={hall.id}
                                     hallId={hallId}
-                                    setHallId={setHallId}
+                                    updateHall={(hall: Hall) => setCurrentHall(hall)}
+                                    radioName="_2"
                                 />
                             )
                         })}
@@ -434,8 +484,7 @@ export const MainContent = (props: any) => {
                         <label className="conf-step__label">Цена, рублей
                             <input type="number"
                                 value={regularPrice}
-                                onChange={(e) => setRegularPrice(Number(e.target.value))}
-                                placeholder="0"
+                                onChange={(e) => setRegularPrice(e.target.value === "" ? NaN : Number(e.target.value))}
                                 className="conf-step__input"
                             />
                         </label>
@@ -445,7 +494,7 @@ export const MainContent = (props: any) => {
                         <label className="conf-step__label">Цена, рублей
                             <input type="number"
                                 value={vipPrice}
-                                onChange={(e) => setVipPrice(Number(e.target.value))}
+                                onChange={(e) => setVipPrice(e.target.value === "" ? NaN : Number(e.target.value))}
                                 placeholder="0"
                                 className="conf-step__input"
                             />
@@ -507,7 +556,7 @@ export const MainContent = (props: any) => {
                                     <input
                                         type="number"
                                         value={filmDuration}
-                                        onChange={(e) => setFilmDuration(Number(e.target.value))}
+                                        onChange={(e) => setFilmDuration(e.target.value === "" ? NaN : Number(e.target.value))}
                                         placeholder="Длительность, мин"
                                         className="conf-step__input width-100"
                                     />
@@ -515,9 +564,9 @@ export const MainContent = (props: any) => {
                                 <p className="conf-step__paragraph">Фото</p>
                                 <p>
                                     <input
-                                        type="text"
-                                        value={filmImage}
-                                        onChange={(e) => setFilmImage(e.target.value)}
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleFileChange}
                                         placeholder="Фото"
                                         className="conf-step__input width-100"
                                     />
@@ -532,7 +581,7 @@ export const MainContent = (props: any) => {
                     <div className="conf-step__movies">
                         {films.map((film: FilmAdmin) => {
                             return (
-                                <FilmElemAdmin film={film} key={film.id}/>
+                                <FilmElemAdmin film={film} backendServer={backendServer} key={film.id}/>
                             )
                         })} 
                     </div>
@@ -541,7 +590,7 @@ export const MainContent = (props: any) => {
                         <DateSlider selectedDay={selectedDay} setSelectedDay={setSelectedDay}/>      
                         {hallsWithTimeline.map((hall: HallWithTimeline) => {
                             return (
-                                <HallWithTimelineAdmin hall={hall}/>
+                                <HallWithTimelineAdmin hall={hall} key={hall.hall_id}/>
                             )
                         })} 
 
@@ -595,12 +644,18 @@ export const MainContent = (props: any) => {
                                 </p>
                                 <p className="conf-step__paragraph">Время начала</p>
                                 <p>
-                                    <input
-                                        type="time"
-                                        value={startTimeSession}
+                                    <select
+                                        value={startTimeSession ?? ""}
                                         onChange={(e) => setStartTimeSession(e.target.value)}
                                         className="conf-step__input width-100"
-                                    />
+                                    >
+                                        <option value="">Выберите доступное время</option>
+                                        {availableSlots && availableSlots.map((slot) => (
+                                            <option key={slot} value={slot}>
+                                                {slot}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </p>
                                 <button className="conf-step__button conf-step__button-regular" onClick={closeSessionModal}>Отмена</button>
                                 <button className="conf-step__button conf-step__button-accent" onClick={() => handleCreateSession(filmSessionId, hallSessionId, dateSession, startTimeSession)}>OK</button>
