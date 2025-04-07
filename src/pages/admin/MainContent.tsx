@@ -62,8 +62,8 @@ export const MainContent = (props: any) => {
     }
 
     //upadte hall prices
-    const [regularPrice, setRegularPrice] = useState<number>();
-    const [vipPrice, setVipPrice] = useState<number>();
+    const [regularPrice, setRegularPrice] = useState<number|string>(0);
+    const [vipPrice, setVipPrice] = useState<number|string>(0);
 
     //update data for selected hall
     const [currentHall, setCurrentHall] = useState<Hall>();
@@ -80,30 +80,30 @@ export const MainContent = (props: any) => {
                 url: backendServer + '/api/price/' + currentHall.id, 
                 sendMethod: 'GET', 
                 callback: (data: any) => {
-                    setRegularPrice(data.price.regular);
-                    setVipPrice(data.price.vip);
+                    setRegularPrice(data.price?.regular ? data.price.regular : 0);
+                    setVipPrice(data.price?.vip ? data.price.vip : 0);
                 }
             });
         }
     }, [currentHall]);
 
     //update prices
-    const handleUpdatePrices = (regularPrice?: number, vipPrice?: number) => {
-        if (!regularPrice || (regularPrice && regularPrice < 0) || !vipPrice || (vipPrice && vipPrice < 0)) return alert("Введите значение цены >= 0");
+    const handleUpdatePrices = (regularPrice?: number|string, vipPrice?: number|string) => {
+        if (!regularPrice || (regularPrice && Number(regularPrice) < 0) || !vipPrice || (vipPrice && Number(vipPrice) < 0)) return alert("Введите значение цены > 0");
 
         const resp = createRequest({
             url: backendServer + `/api/price/${hallId}`,
-            sendMethod: 'GET', 
+            sendMethod: 'GET',
             callback: (data: any) => {
                 if (data.price) {
                     const requestData: Record<string, number> = {};
 
-                    if (regularPrice !== undefined) requestData.regular = regularPrice;
-                    if (vipPrice !== undefined) requestData.vip = vipPrice;
+                    if (regularPrice !== 0) requestData.regular = Number(regularPrice);
+                    if (vipPrice !== 0) requestData.vip = Number(vipPrice);
 
                     const resp = createRequest({
                         url: backendServer + `/api/price/${hallId}`,
-                        sendMethod: 'PATCH', 
+                        sendMethod: 'PATCH',
                         data: requestData,
                         callback: (data: any) => {
                             console.log("Prices updated");
@@ -113,11 +113,11 @@ export const MainContent = (props: any) => {
                 else if (regularPrice && vipPrice) {
                     const resp = createRequest({
                         url: backendServer + `/api/price`,
-                        sendMethod: 'POST', 
+                        sendMethod: 'POST',
                         data: {
                             'hall_id': hallId,
-                            'regular': regularPrice,
-                            'vip': vipPrice
+                            'regular': Number(regularPrice),
+                            'vip': Number(vipPrice)
                         },
                         callback: (data: any) => {
                             console.log("Prices created");
@@ -134,20 +134,20 @@ export const MainContent = (props: any) => {
     }
 
     //hall sizes
-    const [hallX, setHallX] = useState(0);
-    const [hallY, setHallY] = useState(0);
+    const [hallX, setHallX] = useState<number|string>('');
+    const [hallY, setHallY] = useState<number|string>('');
     const [seats, setSeats] = useState<SeatSchema[]>([]);
 
     //upadte hall sizes
-    const handleUpdateSchema = (x: number, y: number, seats: SeatSchema[]) => {
-        if (x < 1 || y < 1 || !x || !y) return alert("Введите значение размеров > 0");
+    const handleUpdateSchema = (x: number|string, y: number|string, seats: SeatSchema[]) => {
+        if (Number(x) < 1 || Number(y) < 1 || !x || !y) return alert("Введите значение размеров > 0");
 
         const resp = createRequest({
             url: backendServer + `/api/hall/${hallId}`,
             sendMethod: 'PATCH', 
             data: {
-                'x': x,
-                'y': y,
+                'x': Number(x),
+                'y': Number(y),
                 'seats': seats
             },
             callback: (data: any) => {
@@ -163,13 +163,13 @@ export const MainContent = (props: any) => {
 
     //hall schema
     //when hallX, hallY changed -> update schema
-    const generateSeats = (x: number, y: number) => {
+    const generateSeats = (x: number|string, y: number|string) => {
         let newSeats: SeatSchema[] = [];
         let idCounter = 1;
 
         if (hallId) {
-            for (let i = 1; i <= x; i++) {
-                for (let j = 1; j <= y; j++) {
+            for (let i = 1; i <= Number(x); i++) {
+                for (let j = 1; j <= Number(y); j++) {
                     newSeats.push({
                         id: idCounter++,
                         hall_id: hallId,
@@ -425,7 +425,10 @@ export const MainContent = (props: any) => {
                     <label className="conf-step__label">Рядов, шт
                         <input type="number"
                             value={hallY}
-                            onChange={(e) => setHallY(e.target.value === "" ? NaN : Number(e.target.value))}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                setHallY(val === "" ? "" : Number(val));
+                              }}
                             className="conf-step__input"
                         />
                     </label>
@@ -433,7 +436,10 @@ export const MainContent = (props: any) => {
                     <label className="conf-step__label">Мест, шт
                         <input type="number"
                             value={hallX}
-                            onChange={(e) => setHallX(e.target.value === "" ? NaN : Number(e.target.value))}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                setHallX(val === "" ? "" : Number(val));
+                              }}
                             className="conf-step__input"
                         />
                     </label>
