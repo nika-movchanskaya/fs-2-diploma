@@ -63,7 +63,9 @@ export const MainContent = (props: any) => {
 
     //upadte hall prices
     const [regularPrice, setRegularPrice] = useState<number|string>(0);
+    const [initRegularPrice, setInitRegularPrice] = useState<number>(0);
     const [vipPrice, setVipPrice] = useState<number|string>(0);
+    const [initVipPrice, setInitVipPrice] = useState<number>(0);
 
     //update data for selected hall
     const [currentHall, setCurrentHall] = useState<Hall>();
@@ -81,7 +83,9 @@ export const MainContent = (props: any) => {
                 sendMethod: 'GET', 
                 callback: (data: any) => {
                     setRegularPrice(data.price?.regular ? data.price.regular : 0);
+                    setInitRegularPrice(data.price?.regular);
                     setVipPrice(data.price?.vip ? data.price.vip : 0);
+                    setInitVipPrice(data.price?.vip);
                 }
             });
         }
@@ -129,8 +133,8 @@ export const MainContent = (props: any) => {
     };
 
     const handleCancelPrices = () => {
-        setRegularPrice(0);
-        setVipPrice(0);
+        setRegularPrice(initRegularPrice || 0);
+        setVipPrice(initVipPrice || 0);
     }
 
     //hall sizes
@@ -157,8 +161,8 @@ export const MainContent = (props: any) => {
     };
 
     const handleCancelSeats = () => {
-        setHallX(0);
-        setHallY(0);
+        setHallX(currentHall?.x || 0);
+        setHallY(currentHall?.y || 0);
     }
 
     //hall schema
@@ -218,7 +222,7 @@ export const MainContent = (props: any) => {
     const [filmName, setFilmName] = useState("");
     const [filmDescription, setFilmDescription] = useState("");
     const [filmOrigin, setFilmOrigin] = useState("");
-    const [filmDuration, setFilmDuration] = useState(0);
+    const [filmDuration, setFilmDuration] = useState<number|string>(0);
     const [filmImage, setFilmImage] = useState<File | null>(null);
 
     const openFilmModal = () => setIsFilmOpen(true);
@@ -231,9 +235,9 @@ export const MainContent = (props: any) => {
     };
 
     //create film
-    const handleCreateFilm = (name: string, description: string, origin: string, duration: number, image: File|null) => {
+    const handleCreateFilm = (name: string, description: string, origin: string, duration: string|number, image: File|null) => {
         if (filmName.trim() === "" || filmDescription.trim() === "" || filmOrigin.trim() === "") return alert("Введите название, описание, длительность, страну фильма!");
-        else if (filmDuration <= 0) {
+        else if (!filmDuration || (filmDuration && Number(filmDuration) <= 0)) {
             return alert("Введите корректную продолжительность фильма!");
         }
         else if (!filmImage) {
@@ -521,8 +525,8 @@ export const MainContent = (props: any) => {
                 </header>
                 <div className="conf-step__wrapper">
                     <p className="conf-step__paragraph">
-
-                    <button className="conf-step__button conf-step__button-accent" onClick={openFilmModal}>Добавить фильм</button>
+                        <button className="conf-step__button conf-step__button-accent" onClick={openFilmModal}>Добавить фильм</button>
+                    </p>
 
                     {isFilmOpen && (
                         <div className="modal-overlay">
@@ -562,7 +566,7 @@ export const MainContent = (props: any) => {
                                     <input
                                         type="number"
                                         value={filmDuration}
-                                        onChange={(e) => setFilmDuration(e.target.value === "" ? NaN : Number(e.target.value))}
+                                        onChange={(e) => setFilmDuration(e.target.value === "" ? "" : Number(e.target.value))}
                                         placeholder="Длительность, мин"
                                         className="conf-step__input width-100"
                                     />
@@ -578,12 +582,11 @@ export const MainContent = (props: any) => {
                                     />
                                 </p>
                                 <button className="conf-step__button conf-step__button-regular" onClick={closeFilmModal}>Отмена</button>
-                                <button className="conf-step__button conf-step__button-accent" onClick={() => handleCreateFilm(filmName, filmDescription, filmOrigin, filmDuration, filmImage)}>OK</button>
+                                <button className="conf-step__button conf-step__button-accent" onClick={() => handleCreateFilm(filmName, filmDescription, filmOrigin, Number(filmDuration), filmImage)}>OK</button>
                             </div>
                         </div>
                     )}
 
-                    </p>
                     <div className="conf-step__movies">
                         {films.map((film: FilmAdmin) => {
                             return (
@@ -599,11 +602,10 @@ export const MainContent = (props: any) => {
                                 <HallWithTimelineAdmin hall={hall} key={hall.hall_id}/>
                             )
                         })} 
-
                     </div>
                     
                     <fieldset className="conf-step__buttons text-center">
-                    <input type="submit" value="Добавить сеанс" className="conf-step__button conf-step__button-accent" onClick={openSessionModal}/>
+                        <input type="submit" value="Добавить сеанс" className="conf-step__button conf-step__button-accent" onClick={openSessionModal}/>
                     </fieldset>  
 
                     {isSessionOpen && (

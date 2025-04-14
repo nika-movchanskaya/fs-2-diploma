@@ -50,15 +50,21 @@ export const createRequest = async(options:{
         fetch(strRequest, {
             method: options.sendMethod,
             body: options.data,
+            headers: {
+                'Accept': 'application/json'
+            }
         })
-            .then((response) => response.json())
+            .then((response) => {
+                console.log(response);
+                return response.json();
+            })
             .then((data: any) => {
                 console.log(data);
                 options.callback(data);
             })
             .catch((error) => {
                 console.error(`Error: ${error}`);
-                alert(error);
+                alert(error?.message || "Upload failed");
             })
     }
 }
