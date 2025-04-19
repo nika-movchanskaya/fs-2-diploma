@@ -189,6 +189,21 @@ export const MainContent = (props: any) => {
     };
 
     useEffect(() => {
+        if (hallId) {
+            createRequest({
+                url: `${backendServer}/api/hall-schema/${hallId}`,
+                sendMethod: 'GET',
+                callback: (data: any) => {
+                    console.log(data);
+                    if (Array.isArray(data)) {
+                        setSeats(data);
+                    }
+                },
+            });
+        }
+    }, [hallId]);
+
+    useEffect(() => {
         setSeats(generateSeats(hallX, hallY));
     }, [hallX, hallY, hallId]);
 
